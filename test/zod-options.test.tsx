@@ -658,6 +658,43 @@ describe("type customization signatures", () => {
         `,
       );
     });
+    test("with quotations in documentation", async () => {
+      const test = await testFor(
+        `@test model Test {
+          /**
+           * description of a "model" property
+           */
+          @maxLength(10)
+          ref?: string;
+        }`,
+        { types: true },
+      );
+      const options = ZodCustomEmitOptions().forType(
+        $(test.program).builtin.string,
+        {
+          reference(props) {
+            expect(props.type).toStrictEqual($(test.program).builtin.string);
+            expect(props.member).toBeDefined();
+            expect(props.member!.name).toBe("ref");
+            return <>/* a reference */{props.default}</>;
+          },
+        },
+      );
+
+      expectOptionRender(
+        test,
+        options,
+        `
+          const Test = z.object({
+            ref: /* a reference */z
+              .string()
+              .max(10)
+              .optional()
+              .describe("description of a \\\"model\\\" property"),
+          });
+        `,
+      );
+    });
     test("assembling parts", async () => {
       const test = await testFor(
         `@test model Test {
