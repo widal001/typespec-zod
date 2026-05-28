@@ -98,6 +98,43 @@ interface TypeCollector {
   get types(): Type[];
 }
 
+/**
+ * Returns true if the given namespace full name matches any entry in the
+ * include list, either exactly or as a sub-namespace (prefix + ".").
+ *
+ * Example: `matchesNamespaceInclude("MyOrg.Core.Models", ["MyOrg.Core"])` is true.
+ */
+export function matchesNamespaceInclude(
+  fullName: string,
+  includes: readonly string[],
+): boolean {
+  for (const name of includes) {
+    if (fullName === name || fullName.startsWith(name + ".")) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Returns true if the given namespace full name is an ancestor of any include
+ * entry. Used to keep navigating downward through parent namespaces in order
+ * to reach a targeted sub-namespace.
+ *
+ * Example: `isAncestorOfNamespaceInclude("MyOrg", ["MyOrg.Core.Models"])` is true.
+ */
+export function isAncestorOfNamespaceInclude(
+  fullName: string,
+  includes: readonly string[],
+): boolean {
+  for (const name of includes) {
+    if (name.startsWith(fullName + ".")) {
+      return true;
+    }
+  }
+  return false;
+}
+
 export function newTopologicalTypeCollector(program: Program): TypeCollector {
   const types = new SCCSet<Type>(referencedTypes);
 
