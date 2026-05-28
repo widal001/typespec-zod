@@ -100,6 +100,7 @@ interface TypeCollector {
 
 export function newTopologicalTypeCollector(program: Program): TypeCollector {
   const types = new SCCSet<Type>(referencedTypes);
+  const pending: Type[] = [];
 
   function referencedTypes(type: Type): Type[] {
     switch (type.kind) {
@@ -143,10 +144,15 @@ export function newTopologicalTypeCollector(program: Program): TypeCollector {
   return {
     collectType(type: Type) {
       if (shouldReference(program, type)) {
-        types.add(type);
+        pending.push(type);
       }
     },
     get types() {
+      // Batch all collected types into the SCCSet at read time so the
+      // sort runs once via #recomputeAll. Adding incrementally with
+      // .add() per type produces a wrong order on larger graphs.
+      // addAll() is idempotent for items already added.
+      types.addAll(pending);
       return types.items;
     },
   };
